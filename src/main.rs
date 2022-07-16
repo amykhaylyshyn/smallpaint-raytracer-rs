@@ -31,6 +31,7 @@ struct Renderer {
 }
 
 fn main() -> Result<(), Error> {
+    dotenv::dotenv().ok();
     env_logger::init();
     let event_loop = EventLoop::with_user_event();
     let event_loop_proxy = event_loop.create_proxy();
@@ -180,9 +181,9 @@ impl Renderer {
                 let x = (i % viewport_height) as f64;
                 let y = (i / viewport_width) as f64;
 
-                let ray_direction = self.camera.ray(&self.viewport, x, y);
-                // ray_direction.x += (rng.sample() * 2.0 - 1.0) / 700.0;
-                // ray_direction.y += (rng.sample() * 2.0 - 1.0) / 700.0;
+                let mut ray_direction = self.camera.ray(&self.viewport, x, y);
+                ray_direction.x += (rng.sample() * 2.0 - 1.0) / 700.0;
+                ray_direction.y += (rng.sample() * 2.0 - 1.0) / 700.0;
                 let ray = Ray::new(Vector3::zeros(), ray_direction);
 
                 *pixel += self.trace(&ray, rng, Vector3::zeros(), 0) * weight;
