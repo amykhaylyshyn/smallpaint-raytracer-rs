@@ -16,7 +16,7 @@ use winit::window::WindowBuilder;
 
 const WIDTH: u32 = 640;
 const HEIGHT: u32 = 480;
-const SAMPLES: u32 = 32;
+const SAMPLES: u32 = 256;
 const RR_STOP_PROBABILITY: f64 = 0.1;
 
 enum UserEvent {
@@ -174,11 +174,10 @@ impl Renderer {
 
     fn draw(&self, frame: &mut Vec<Vector3<f64>>, weight: f64) {
         let viewport_width = self.viewport.width;
-        let viewport_height = self.viewport.height;
         frame.par_iter_mut().enumerate().for_each_init(
             || Random::new(),
             |rng, (i, pixel)| {
-                let x = (i % viewport_height) as f64;
+                let x = (i % viewport_width) as f64;
                 let y = (i / viewport_width) as f64;
 
                 let mut ray_direction = self.camera.ray(&self.viewport, x, y);
