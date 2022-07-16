@@ -1,5 +1,4 @@
 use nalgebra::Vector3;
-use rayon::prelude::*;
 
 use crate::{random::Random, scalar::EPSILON};
 
@@ -114,10 +113,10 @@ impl Geometry for Plane {
         let d0 = self.normal.dot(&ray.direction);
         if d0.abs() > EPSILON {
             let t = (self.normal.dot(&ray.origin) + self.d) / d0;
-            if t.abs() > EPSILON {
+            if t > EPSILON {
                 Some(t)
             } else {
-                Some(0.0)
+                None
             }
         } else {
             None
@@ -272,7 +271,7 @@ impl Scene {
 
     pub fn trace(&self, ray: &Ray) -> Option<TraceResult> {
         self.objects
-            .par_iter()
+            .iter()
             .filter_map(|(object, material)| match object.intersect(ray) {
                 Some(distance) => {
                     let hit_point = ray.origin + ray.direction * distance;
