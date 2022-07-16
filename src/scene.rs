@@ -1,8 +1,4 @@
 use nalgebra::Vector3;
-use rand::{
-    distributions::{Distribution, Uniform},
-    prelude::ThreadRng,
-};
 use rayon::prelude::*;
 
 use crate::{random::Random, scalar::EPSILON};
@@ -202,12 +198,12 @@ impl Geometry for Object {
 pub type ObjectWithMaterial = (Object, Material);
 
 pub struct Viewport {
-    pub width: f64,
-    pub height: f64,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Viewport {
-    pub fn new(width: f64, height: f64) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         Self { width, height }
     }
 }
@@ -222,8 +218,8 @@ impl Camera {
     }
 
     pub fn ray(&self, viewport: &Viewport, x: f64, y: f64) -> Vector3<f64> {
-        let w = viewport.width;
-        let h = viewport.height;
+        let w = viewport.width as f64;
+        let h = viewport.height as f64;
         let fovx = w * self.fovy / h;
         Vector3::new(
             (2.0 * x - w) * fovx.tan() / w,

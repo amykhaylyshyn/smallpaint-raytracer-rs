@@ -16,11 +16,15 @@ use winit::window::WindowBuilder;
 
 const WIDTH: u32 = 640;
 const HEIGHT: u32 = 480;
-const SAMPLES: u32 = 2;
+const SAMPLES: u32 = 32;
 const RR_STOP_PROBABILITY: f64 = 0.1;
 
+enum UserEvent {
+    Frame(Vec<Vector3<f64>>),
+}
+
 /// Representation of the application state. In this example, a box will bounce around the screen.
-struct World {
+struct Renderer {
     viewport: Viewport,
     camera: Camera,
     scene: Scene,
@@ -28,7 +32,8 @@ struct World {
 
 fn main() -> Result<(), Error> {
     env_logger::init();
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::with_user_event();
+    let event_loop_proxy = event_loop.create_proxy();
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
@@ -43,12 +48,24 @@ fn main() -> Result<(), Error> {
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
-    let mut world = World::new(Viewport::new(WIDTH as f64, HEIGHT as f64));
+    let renderer = Renderer::new(Viewport::new(WIDTH as usize, HEIGHT as usize));
+    std::thread::spawn(move || {
+        let mut frame = Vec::new();
+        frame.resize_with((WIDTH * HEIGHT) as usize, || Vector3::zeros());
+
+        let inv_samples = 1.0 / SAMPLES as f64;
+        for _ in 0..SAMPLES {
+            renderer.draw(&mut frame, inv_samples);
+            event_loop_proxy
+                .send_event(UserEvent::Frame(frame.clone()))
+                .ok();
+        }
+    });
+
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent { event, .. } => match event {
             winit::event::WindowEvent::Resized(new_size) => {
                 pixels.resize_surface(new_size.width, new_size.height);
-                world.resize_viewport(new_size.width as f64, new_size.height as f64);
             }
             winit::event::WindowEvent::CloseRequested => {
                 *control_flow = ControlFlow::Exit;
@@ -56,7 +73,6 @@ fn main() -> Result<(), Error> {
             _ => {}
         },
         Event::RedrawRequested(_) => {
-            world.draw(pixels.get_frame());
             if pixels
                 .render()
                 .map_err(|e| error!("pixels.render() failed: {}", e))
@@ -66,14 +82,26 @@ fn main() -> Result<(), Error> {
                 return;
             }
         }
-        Event::MainEventsCleared => {
-            // window.request_redraw();
-        }
+        Event::UserEvent(user_event) => match user_event {
+            UserEvent::Frame(frame) => {
+                let pixels_frame = pixels.get_frame();
+                for (src, dst) in frame.into_iter().zip(pixels_frame.chunks_exact_mut(4)) {
+                    dst.copy_from_slice(&[
+                        src.x.min(255.0) as u8,
+                        src.y.min(255.0) as u8,
+                        src.z.min(255.0) as u8,
+                        0xff,
+                    ]);
+                }
+                window.request_redraw();
+                log::info!("frame received");
+            }
+        },
         _ => {}
     });
 }
 
-impl World {
+impl Renderer {
     /// Create a new `World` instance that can draw a moving box.
     fn new(viewport: Viewport) -> Self {
         let mut scene = Scene::new();
@@ -143,40 +171,21 @@ impl World {
         }
     }
 
-    fn resize_viewport(&mut self, width: f64, height: f64) {
-        self.viewport = Viewport::new(width, height);
-    }
-
-    /// Draw the `World` state to the frame buffer.
-    ///
-    /// Assumes the default texture format: `wgpu::TextureFormat::Rgba8UnormSrgb`
-    fn draw(&self, frame: &mut [u8]) {
-        let viewport_width = self.viewport.width as usize;
-        let viewport_height = self.viewport.height as usize;
-        let inv_samples = 1.0 / SAMPLES as f64;
-        frame.par_chunks_exact_mut(4).enumerate().for_each_init(
+    fn draw(&self, frame: &mut Vec<Vector3<f64>>, weight: f64) {
+        let viewport_width = self.viewport.width;
+        let viewport_height = self.viewport.height;
+        frame.par_iter_mut().enumerate().for_each_init(
             || Random::new(),
             |rng, (i, pixel)| {
                 let x = (i % viewport_height) as f64;
                 let y = (i / viewport_width) as f64;
 
-                let mut color = Vector3::zeros();
-                for _ in 0..SAMPLES {
-                    let mut ray_direction = self.camera.ray(&self.viewport, x, y);
-                    ray_direction.x += (rng.sample() * 2.0 - 1.0) / 700.0;
-                    ray_direction.y += (rng.sample() * 2.0 - 1.0) / 700.0;
-                    let ray = Ray::new(Vector3::zeros(), ray_direction);
+                let ray_direction = self.camera.ray(&self.viewport, x, y);
+                // ray_direction.x += (rng.sample() * 2.0 - 1.0) / 700.0;
+                // ray_direction.y += (rng.sample() * 2.0 - 1.0) / 700.0;
+                let ray = Ray::new(Vector3::zeros(), ray_direction);
 
-                    color += self.trace(&ray, rng, Vector3::zeros(), 0) * inv_samples;
-                }
-
-                let rgba = [
-                    color.x.min(255.0) as u8,
-                    color.y.min(255.0) as u8,
-                    color.z.min(255.0) as u8,
-                    0xff,
-                ];
-                pixel.copy_from_slice(&rgba);
+                *pixel += self.trace(&ray, rng, Vector3::zeros(), 0) * weight;
             },
         );
     }
