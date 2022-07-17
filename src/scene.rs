@@ -146,7 +146,12 @@ impl Geometry for Sphere {
             x if x < 0.0 => None,
             x => {
                 let sqrtd = x.sqrt();
-                Some((-half_b - sqrtd).min(-half_b + sqrtd) / a)
+                let distance = (-half_b - sqrtd).min(-half_b + sqrtd) / a;
+                if distance > EPSILON {
+                    Some(distance)
+                } else {
+                    None
+                }
             }
         }
     }
