@@ -221,11 +221,8 @@ impl Renderer {
                 let color2 = self.trace(&new_ray, rng, result, depth + 1);
                 match material.kind {
                     MaterialKind::Diffuse => {
-                        result += Vector3::new(
-                            color2.x * material.color.x,
-                            color2.y * material.color.y,
-                            color2.z * material.color.z,
-                        ) * rr_factor
+                        result += color2.component_mul(&material.color)
+                            * rr_factor
                             * 0.1
                             * new_ray.direction.dot(&trace_result.normal);
                     }
