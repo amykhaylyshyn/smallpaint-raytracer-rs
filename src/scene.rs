@@ -19,25 +19,20 @@ impl Ray {
 
 #[derive(Debug, Clone, Copy)]
 pub enum MaterialKind {
-    Diffuse,
+    Diffuse { color: Vector3<f64> },
     Specular,
     Refractive { refraction_index: f64 },
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Material {
-    pub color: Vector3<f64>,
     pub emission: f64,
     pub kind: MaterialKind,
 }
 
 impl Material {
-    pub fn new(color: Vector3<f64>, emission: f64, kind: MaterialKind) -> Self {
-        Self {
-            color,
-            emission,
-            kind,
-        }
+    pub fn new(emission: f64, kind: MaterialKind) -> Self {
+        Self { emission, kind }
     }
 
     pub fn hit(
@@ -49,7 +44,7 @@ impl Material {
         rng: &mut Random,
     ) -> Ray {
         match self.kind {
-            MaterialKind::Diffuse => {
+            MaterialKind::Diffuse { .. } => {
                 let (rot_x, rot_y) = make_orthonormal_system(&normal);
                 let sampled_dir = hemisphere(rng.sample(), rng.sample());
                 let rotated_dir = Vector3::new(

@@ -16,7 +16,7 @@ use winit::window::WindowBuilder;
 
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
-const SAMPLES: u32 = 256;
+const SAMPLES: u32 = 64;
 const RR_STOP_PROBABILITY: f64 = 0.1;
 
 enum UserEvent {
@@ -108,13 +108,12 @@ impl Renderer {
         // Middle sphere
         scene.add(
             Sphere::new(1.05, Vector3::new(-0.75, -1.45, -4.4)),
-            Material::new(Vector3::new(4.0, 8.0, 4.0), 0.0, MaterialKind::Specular),
+            Material::new(0.0, MaterialKind::Specular),
         );
         // Right sphere
         scene.add(
             Sphere::new(0.5, Vector3::new(2.0, -2.05, -3.7)),
             Material::new(
-                Vector3::new(10.0, 10.0, 1.0),
                 0.0,
                 MaterialKind::Refractive {
                     refraction_index: 1.5,
@@ -124,43 +123,83 @@ impl Renderer {
         // Left sphere
         scene.add(
             Sphere::new(0.6, Vector3::new(-1.75, -1.95, -3.1)),
-            Material::new(Vector3::new(4.0, 4.0, 12.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(4.0, 4.0, 12.0),
+                },
+            ),
         );
         // Light
         scene.add(
             Sphere::new(0.5, Vector3::new(0.0, 1.9, -3.0)),
-            Material::new(Vector3::zeros(), 10000.0, MaterialKind::Diffuse),
+            Material::new(
+                10000.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::zeros(),
+                },
+            ),
         );
 
         // Bottom plane
         scene.add(
             Plane::new(2.5, Vector3::new(0.0, 1.0, 0.0)),
-            Material::new(Vector3::new(6.0, 6.0, 6.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(6.0, 6.0, 6.0),
+                },
+            ),
         );
         // Back plane
         scene.add(
             Plane::new(5.5, Vector3::new(0.0, 0.0, 1.0)),
-            Material::new(Vector3::new(6.0, 6.0, 6.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(6.0, 6.0, 6.0),
+                },
+            ),
         );
         // Left plane
         scene.add(
             Plane::new(2.75, Vector3::new(1.0, 0.0, 0.0)),
-            Material::new(Vector3::new(10.0, 2.0, 2.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(10.0, 2.0, 2.0),
+                },
+            ),
         );
         // Right plane
         scene.add(
             Plane::new(2.75, Vector3::new(-1.0, 0.0, 0.0)),
-            Material::new(Vector3::new(2.0, 10.0, 2.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(2.0, 10.0, 2.0),
+                },
+            ),
         );
         // Ceiling plane
         scene.add(
             Plane::new(3.0, Vector3::new(0.0, -1.0, 0.0)),
-            Material::new(Vector3::new(6.0, 6.0, 6.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(6.0, 6.0, 6.0),
+                },
+            ),
         );
         // Front plane
         scene.add(
             Plane::new(0.5, Vector3::new(0.0, 0.0, -1.0)),
-            Material::new(Vector3::new(6.0, 6.0, 6.0), 0.0, MaterialKind::Diffuse),
+            Material::new(
+                0.0,
+                MaterialKind::Diffuse {
+                    color: Vector3::new(6.0, 6.0, 6.0),
+                },
+            ),
         );
 
         let camera = Camera::new(std::f64::consts::FRAC_PI_4);
@@ -218,19 +257,19 @@ impl Renderer {
                     trace_result.dot_product,
                     rng,
                 );
-                let color2 = self.trace(&new_ray, rng, result, depth + 1);
+                let ambient = self.trace(&new_ray, rng, result, depth + 1);
                 match material.kind {
-                    MaterialKind::Diffuse => {
-                        result += color2.component_mul(&material.color)
+                    MaterialKind::Diffuse { color } => {
+                        result += ambient.component_mul(&color)
                             * rr_factor
                             * 0.1
                             * new_ray.direction.dot(&trace_result.normal);
                     }
                     MaterialKind::Specular => {
-                        result += color2 * rr_factor;
+                        result += ambient * rr_factor;
                     }
                     MaterialKind::Refractive { .. } => {
-                        result += color2 * 1.15 * rr_factor;
+                        result += ambient * 1.15 * rr_factor;
                     }
                 }
 
