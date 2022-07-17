@@ -2,6 +2,7 @@ mod random;
 mod scalar;
 mod scene;
 
+use clap::Parser;
 use log::error;
 use nalgebra::Vector3;
 use pixels::{Error, Pixels, SurfaceTexture};
@@ -14,10 +15,20 @@ use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-const WIDTH: u32 = 600;
-const HEIGHT: u32 = 600;
-const SAMPLES: u32 = 1024;
 const RR_STOP_PROBABILITY: f64 = 0.1;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(short, long, value_parser, default_value_t = 600)]
+    width: u32,
+
+    #[clap(short, long, value_parser, default_value_t = 600)]
+    height: u32,
+
+    #[clap(short, long, value_parser, default_value_t = 256)]
+    samples: u32,
+}
 
 enum UserEvent {
     Frame(Vec<Vector3<f64>>),
@@ -32,10 +43,11 @@ struct Renderer {
 fn main() -> Result<(), Error> {
     dotenv::dotenv().ok();
     env_logger::init();
+    let args = Args::parse();
     let event_loop = EventLoop::with_user_event();
     let event_loop_proxy = event_loop.create_proxy();
     let window = {
-        let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
+        let size = LogicalSize::new(args.width as f64, args.height as f64);
         WindowBuilder::new()
             .with_title("Raytracing demo")
             .with_inner_size(size)
@@ -46,15 +58,15 @@ fn main() -> Result<(), Error> {
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        Pixels::new(WIDTH, HEIGHT, surface_texture)?
+        Pixels::new(args.width, args.height, surface_texture)?
     };
-    let renderer = Renderer::new(Viewport::new(WIDTH as usize, HEIGHT as usize));
+    let renderer = Renderer::new(Viewport::new(args.width as usize, args.height as usize));
     std::thread::spawn(move || {
         let mut frame = Vec::new();
-        frame.resize_with((WIDTH * HEIGHT) as usize, || Vector3::zeros());
+        frame.resize_with((args.width * args.height) as usize, || Vector3::zeros());
 
-        let inv_samples = 1.0 / SAMPLES as f64;
-        for _ in 0..SAMPLES {
+        let inv_samples = 1.0 / args.samples as f64;
+        for _ in 0..args.samples {
             renderer.draw(&mut frame, inv_samples);
             event_loop_proxy
                 .send_event(UserEvent::Frame(frame.clone()))

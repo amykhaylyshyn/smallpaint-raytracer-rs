@@ -14,3 +14,4 @@ pixels = "0.9"
 nalgebra = "0.31"
 rand = "0.8"
 rayon = "1.5"
+clap = { version = "3.2", features = ["derive"] }
