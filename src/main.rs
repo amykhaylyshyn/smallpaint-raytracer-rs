@@ -14,8 +14,8 @@ use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-const WIDTH: u32 = 320;
-const HEIGHT: u32 = 240;
+const WIDTH: u32 = 600;
+const HEIGHT: u32 = 600;
 const SAMPLES: u32 = 256;
 const RR_STOP_PROBABILITY: f64 = 0.1;
 
@@ -123,7 +123,7 @@ impl Renderer {
         );
         // Left sphere
         scene.add(
-            Sphere::new(0.6, Vector3::new(0.0, -1.95, -3.1)),
+            Sphere::new(0.6, Vector3::new(-1.75, -1.95, -3.1)),
             Material::new(Vector3::new(4.0, 4.0, 12.0), 0.0, MaterialKind::Diffuse),
         );
         // Light

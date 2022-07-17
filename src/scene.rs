@@ -112,7 +112,7 @@ impl Geometry for Plane {
     fn intersect(&self, ray: &Ray) -> Option<f64> {
         let d0 = self.normal.dot(&ray.direction);
         if d0.abs() > EPSILON {
-            let t = (self.normal.dot(&ray.origin) + self.d) / d0;
+            let t = -(self.normal.dot(&ray.origin) + self.d) / d0;
             if t > EPSILON {
                 Some(t)
             } else {
