@@ -208,21 +208,22 @@ impl Viewport {
 }
 
 pub struct Camera {
-    fovy: f64,
+    fovx: f64,
 }
 
 impl Camera {
-    pub fn new(fovy: f64) -> Self {
-        Self { fovy }
+    pub fn new(fovx: f64) -> Self {
+        Self { fovx }
     }
 
     pub fn ray(&self, viewport: &Viewport, x: f64, y: f64) -> Vector3<f64> {
         let w = viewport.width as f64;
         let h = viewport.height as f64;
-        let fovx = w * self.fovy / h;
+        let fovx = self.fovx;
+        let fovy = h * fovx / w;
         Vector3::new(
             (2.0 * x - w) * fovx.tan() / w,
-            -(2.0 * y - h) * self.fovy.tan() / h,
+            -(2.0 * y - h) * fovy.tan() / h,
             -1.0,
         )
     }

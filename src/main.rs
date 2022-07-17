@@ -14,8 +14,8 @@ use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 
-const WIDTH: u32 = 640;
-const HEIGHT: u32 = 480;
+const WIDTH: u32 = 320;
+const HEIGHT: u32 = 240;
 const SAMPLES: u32 = 256;
 const RR_STOP_PROBABILITY: f64 = 0.1;
 
@@ -23,7 +23,6 @@ enum UserEvent {
     Frame(Vec<Vector3<f64>>),
 }
 
-/// Representation of the application state. In this example, a box will bounce around the screen.
 struct Renderer {
     viewport: Viewport,
     camera: Camera,
@@ -164,7 +163,7 @@ impl Renderer {
             Material::new(Vector3::new(6.0, 6.0, 6.0), 0.0, MaterialKind::Diffuse),
         );
 
-        let camera = Camera::new(std::f64::consts::FRAC_PI_3);
+        let camera = Camera::new(std::f64::consts::FRAC_PI_4);
         Self {
             scene,
             camera,
@@ -199,7 +198,7 @@ impl Renderer {
     ) -> Vector3<f64> {
         let mut rr_factor = 1.0;
         if depth >= 5 {
-            if rng.sample() > RR_STOP_PROBABILITY {
+            if rng.sample() <= RR_STOP_PROBABILITY {
                 return color;
             }
             rr_factor = 1.0 / (1.0 - RR_STOP_PROBABILITY);
