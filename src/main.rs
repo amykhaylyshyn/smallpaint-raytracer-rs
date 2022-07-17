@@ -16,7 +16,7 @@ use winit::window::WindowBuilder;
 
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
-const SAMPLES: u32 = 64;
+const SAMPLES: u32 = 1024;
 const RR_STOP_PROBABILITY: f64 = 0.1;
 
 enum UserEvent {
@@ -223,22 +223,16 @@ impl Renderer {
                 ray_direction.y += (rng.sample() * 2.0 - 1.0) / 700.0;
                 let ray = Ray::new(Vector3::zeros(), ray_direction);
 
-                *pixel += self.trace(&ray, rng, Vector3::zeros(), 0) * weight;
+                *pixel += self.trace(&ray, rng, 0) * weight;
             },
         );
     }
 
-    fn trace(
-        &self,
-        ray: &Ray,
-        rng: &mut Random,
-        color: Vector3<f64>,
-        depth: usize,
-    ) -> Vector3<f64> {
+    fn trace(&self, ray: &Ray, rng: &mut Random, depth: usize) -> Vector3<f64> {
         let mut rr_factor = 1.0;
         if depth >= 5 {
             if rng.sample() <= RR_STOP_PROBABILITY {
-                return color;
+                return Vector3::zeros();
             }
             rr_factor = 1.0 / (1.0 - RR_STOP_PROBABILITY);
         }
@@ -246,9 +240,8 @@ impl Renderer {
         match self.scene.trace(ray) {
             Some(trace_result) => {
                 let material = trace_result.material;
-                let mut result = color;
-                result += Vector3::new(material.emission, material.emission, material.emission)
-                    * rr_factor;
+                let mut result = Vector3::zeros();
+                result += Vector3::from_element(material.emission) * rr_factor;
 
                 let new_ray = material.hit(
                     ray,
@@ -257,7 +250,7 @@ impl Renderer {
                     trace_result.dot_product,
                     rng,
                 );
-                let ambient = self.trace(&new_ray, rng, result, depth + 1);
+                let ambient = self.trace(&new_ray, rng, depth + 1);
                 match material.kind {
                     MaterialKind::Diffuse { color } => {
                         result += ambient.component_mul(&color)
@@ -275,7 +268,7 @@ impl Renderer {
 
                 result
             }
-            None => color,
+            None => Vector3::zeros(),
         }
     }
 }
