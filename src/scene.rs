@@ -59,10 +59,10 @@ impl Material {
                 );
                 Ray::new(hit_point.clone(), rotated_dir)
             }
-            MaterialKind::Specular => {
-                let cost = dot_product;
-                Ray::new(hit_point.clone(), ray.direction - normal * cost * 2.0)
-            }
+            MaterialKind::Specular => Ray::new(
+                hit_point.clone(),
+                ray.direction - 2.0 * dot_product * normal,
+            ),
             MaterialKind::Refractive {
                 refraction_index: mut n,
             } => {
