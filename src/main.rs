@@ -255,29 +255,16 @@ impl Renderer {
                 let mut result = Vector3::zeros();
                 result += Vector3::from_element(material.emission) * rr_factor;
 
-                let new_ray = material.hit(
+                let scattered_ray = material.scatter(
                     ray,
                     &trace_result.hit_point,
                     &trace_result.normal,
                     trace_result.dot_product,
                     rng,
                 );
-                let ambient = self.trace(&new_ray, rng, depth + 1);
-                match material.kind {
-                    MaterialKind::Diffuse { color } => {
-                        result += ambient.component_mul(&color)
-                            * rr_factor
-                            * 0.1
-                            * new_ray.direction.dot(&trace_result.normal);
-                    }
-                    MaterialKind::Specular => {
-                        result += ambient * rr_factor;
-                    }
-                    MaterialKind::Refractive { .. } => {
-                        result += ambient * 1.15 * rr_factor;
-                    }
-                }
-
+                let ambient = self.trace(&scattered_ray, rng, depth + 1);
+                result +=
+                    material.get_color(&ambient, &scattered_ray, &trace_result.normal, rr_factor);
                 result
             }
             None => Vector3::zeros(),

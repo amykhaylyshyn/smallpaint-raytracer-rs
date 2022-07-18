@@ -35,7 +35,7 @@ impl Material {
         Self { emission, kind }
     }
 
-    pub fn hit(
+    pub fn scatter(
         &self,
         ray: &Ray,
         hit_point: &Vector3<f64>,
@@ -82,6 +82,22 @@ impl Material {
                 };
                 Ray::new(hit_point.clone(), ray_direction)
             }
+        }
+    }
+
+    pub fn get_color(
+        &self,
+        ambient: &Vector3<f64>,
+        ray: &Ray,
+        normal: &Vector3<f64>,
+        rr_factor: f64,
+    ) -> Vector3<f64> {
+        match self.kind {
+            MaterialKind::Diffuse { color } => {
+                ambient.component_mul(&color) * rr_factor * 0.1 * ray.direction.dot(normal)
+            }
+            MaterialKind::Specular => ambient * rr_factor,
+            MaterialKind::Refractive { .. } => ambient * 1.15 * rr_factor,
         }
     }
 }
